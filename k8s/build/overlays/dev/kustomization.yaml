@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: build-dev
+resources:
+  - ../../base
+patches:
+  - path: environment.yaml
+  - target:
+      kind: NetworkPolicy
+      name: build-service
+    patch: |-
+      - op: replace
+        path: /spec/ingress/0/from/0/namespaceSelector/matchLabels/kubernetes.io~1metadata.name
+        value: app-dev

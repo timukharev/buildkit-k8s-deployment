@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: build-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: build-service
+  template:
+    metadata:
+      labels:
+        app: build-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+    spec:
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 960
+      securityContext:
+        fsGroup: 1000
+      imagePullSecrets:
+        - name: registry-pull
+      containers:
+        - name: api
+          image: registry.example.com/platform/build-service:template
+          ports:
+            - name: http
+              containerPort: 8080
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+            seccompProfile:
+              type: RuntimeDefault
+          env:
+            - name: BUILDKIT_HOST
+              value: unix:///run/buildkit/buildkitd.sock
+            - name: IMAGE_REPOSITORY
+              value: registry.example.com/demo-dev/sample-app
+            - name: BUILD_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: build-api
+                  key: token
+            - name: MAX_CONCURRENT_BUILDS
+              value: "2"
+            - name: BUILD_TIMEOUT_SECONDS
+              value: "900"
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {cpu: "1", memory: 512Mi}
+          readinessProbe:
+            httpGet: {path: /ready, port: http}
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet: {path: /health, port: http}
+          volumeMounts:
+            - {name: socket, mountPath: /run/buildkit}
+            - {name: contexts, mountPath: /tmp}
+            - {name: registry-auth, mountPath: /registry-auth, readOnly: true}
+        - name: buildkit
+          image: moby/buildkit:v0.25.0
+          args: ["--addr=unix:///run/buildkit/buildkitd.sock", "--group=1000"]
+          securityContext:
+            privileged: true
+            runAsUser: 0
+          resources:
+            requests: {cpu: 500m, memory: 512Mi}
+            limits: {cpu: "2", memory: 2Gi}
+          readinessProbe:
+            exec:
+              command: [buildctl, debug, workers]
+            timeoutSeconds: 5
+          volumeMounts:
+            - {name: socket, mountPath: /run/buildkit}
+            - {name: cache, mountPath: /var/lib/buildkit}
+      volumes:
+        - name: socket
+          emptyDir: {}
+        - name: contexts
+          emptyDir: {sizeLimit: 1Gi}
+        - name: cache
+          emptyDir: {sizeLimit: 10Gi}
+        - name: registry-auth
+          secret:
+            secretName: registry-push
+            items:
+              - {key: .dockerconfigjson, path: config.json}

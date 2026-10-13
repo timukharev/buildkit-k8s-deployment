@@ -1,0 +1,31 @@
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+*.tfstate
+*.tfstate.*
+*.tfvars
+.terraform/
+kubeconfig*
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.jks
+*.log
+*.tar
+*.tar.gz
+*.zip
+secrets/
+local/
+rendered/
+docs/validation.md
+
+# Local development
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.idea/
+.DS_Store

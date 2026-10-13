@@ -1,0 +1,57 @@
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+    - when: never
+
+variables:
+  TARGET_ENV:
+    value: dev
+    options: [dev, test, prod]
+    description: "Choose the deployment environment"
+  REGISTRY_HOST: registry.example.com
+  CI_TOOLS_IMAGE: registry.example.com/platform/ci-tools:template
+
+stages: [validate, build, deploy]
+
+default:
+  image: $CI_TOOLS_IMAGE
+  tags: ["delivery-$TARGET_ENV"]
+  before_script:
+    - |
+      set -eu
+      case "$TARGET_ENV" in dev|test|prod) ;; *) exit 1 ;; esac
+      export IMAGE_REPOSITORY="$REGISTRY_HOST/demo-$TARGET_ENV/sample-app"
+      export BUILD_SERVICE_URL="http://build-service.build-$TARGET_ENV.svc.cluster.local:8080"
+
+validate:
+  stage: validate
+  script:
+    - python3 -m unittest discover -s tests -v
+    - helm lint helm/sample-app
+
+build:
+  stage: build
+  environment:
+    name: $TARGET_ENV
+    action: prepare
+  script:
+    - |
+      test -n "$BUILD_API_TOKEN"
+      python3 scripts/submit-build.py
+
+deploy:
+  stage: deploy
+  environment:
+    name: $TARGET_ENV
+  resource_group: "sample-app-$TARGET_ENV"
+  when: manual
+  allow_failure: false
+  script:
+    - |
+      test -s "$KUBECONFIG"
+      helm upgrade --install sample-app helm/sample-app \
+        --namespace "app-$TARGET_ENV" \
+        --values "helm/sample-app/values-$TARGET_ENV.yaml" \
+        --set-string "image.repository=$IMAGE_REPOSITORY" \
+        --set-string "image.tag=$CI_COMMIT_SHA" \
+        --wait --atomic --timeout 5m

@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      imagePullSecrets:
+        {{- toYaml .Values.imagePullSecrets | nindent 8 }}
+      containers:
+        - name: app
+          image: {{ printf "%s:%s" .Values.image.repository .Values.image.tag | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          ports:
+            - {name: http, containerPort: 8080}
+          env:
+            - name: ENVIRONMENT
+              value: {{ .Values.environment | quote }}
+          {{- if .Values.existingSecret }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.existingSecret | quote }}
+          {{- end }}
+          readinessProbe:
+            httpGet: {path: /health, port: http}
+          livenessProbe:
+            httpGet: {path: /health, port: http}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}

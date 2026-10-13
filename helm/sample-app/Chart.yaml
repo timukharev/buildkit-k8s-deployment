@@ -1,0 +1,6 @@
+apiVersion: v2
+name: sample-app
+description: Synthetic application deployment example
+type: application
+version: 0.1.0
+appVersion: "template"

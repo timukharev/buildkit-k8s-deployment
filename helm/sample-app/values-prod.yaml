@@ -1,0 +1,4 @@
+environment: prod
+replicaCount: 2
+image:
+  repository: registry.example.com/demo-prod/sample-app

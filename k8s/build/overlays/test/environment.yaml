@@ -1,0 +1,12 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: build-service
+spec:
+  template:
+    spec:
+      containers:
+        - name: api
+          env:
+            - name: IMAGE_REPOSITORY
+              value: registry.example.com/demo-test/sample-app

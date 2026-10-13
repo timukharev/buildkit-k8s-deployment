@@ -1,0 +1,13 @@
+replicaCount: 1
+environment: dev
+image:
+  repository: registry.example.com/demo-dev/sample-app
+  tag: template
+  pullPolicy: IfNotPresent
+imagePullSecrets:
+  - name: registry-pull
+resources:
+  requests: {cpu: 50m, memory: 64Mi}
+  limits: {cpu: 250m, memory: 128Mi}
+# Optional existing Secret; never put application secret values in this chart.
+existingSecret: ""

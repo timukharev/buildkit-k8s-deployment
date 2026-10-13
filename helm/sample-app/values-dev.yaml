@@ -1,0 +1,4 @@
+environment: dev
+replicaCount: 1
+image:
+  repository: registry.example.com/demo-dev/sample-app

@@ -1,0 +1,37 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: build-service
+spec:
+  podSelector:
+    matchLabels:
+      app: build-service
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        # Both selectors must match. Administrators assign the runner pod label.
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: app-dev
+          podSelector:
+            matchLabels:
+              delivery-role: ci-build
+      ports:
+        - {protocol: TCP, port: 8080}
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - {protocol: TCP, port: 8080}
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - {protocol: UDP, port: 53}
+        - {protocol: TCP, port: 53}
+    # Generic HTTPS access for registries and package mirrors. Narrow per site.
+    - ports:
+        - {protocol: TCP, port: 443}

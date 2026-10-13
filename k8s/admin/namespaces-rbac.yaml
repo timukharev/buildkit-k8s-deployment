@@ -1,0 +1,152 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: build-dev
+  labels:
+    pod-security.kubernetes.io/enforce: privileged
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: app-dev
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: app-deployer
+  namespace: app-dev
+automountServiceAccountToken: false
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: app-deployer
+  namespace: app-dev
+rules:
+  - apiGroups: [apps]
+    resources: [deployments, replicasets]
+    verbs: [get, list, watch, create, update, patch, delete]
+  - apiGroups: [""]
+    resources: [services, secrets]
+    verbs: [get, list, watch, create, update, patch, delete]
+  - apiGroups: [""]
+    resources: [pods, events]
+    verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: app-deployer
+  namespace: app-dev
+subjects:
+  - kind: ServiceAccount
+    name: app-deployer
+    namespace: app-dev
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: app-deployer
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: build-test
+  labels:
+    pod-security.kubernetes.io/enforce: privileged
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: app-test
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: app-deployer
+  namespace: app-test
+automountServiceAccountToken: false
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: app-deployer
+  namespace: app-test
+rules:
+  - apiGroups: [apps]
+    resources: [deployments, replicasets]
+    verbs: [get, list, watch, create, update, patch, delete]
+  - apiGroups: [""]
+    resources: [services, secrets]
+    verbs: [get, list, watch, create, update, patch, delete]
+  - apiGroups: [""]
+    resources: [pods, events]
+    verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: app-deployer
+  namespace: app-test
+subjects:
+  - kind: ServiceAccount
+    name: app-deployer
+    namespace: app-test
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: app-deployer
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: build-prod
+  labels:
+    pod-security.kubernetes.io/enforce: privileged
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: app-prod
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: app-deployer
+  namespace: app-prod
+automountServiceAccountToken: false
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: app-deployer
+  namespace: app-prod
+rules:
+  - apiGroups: [apps]
+    resources: [deployments, replicasets]
+    verbs: [get, list, watch, create, update, patch, delete]
+  - apiGroups: [""]
+    resources: [services, secrets]
+    verbs: [get, list, watch, create, update, patch, delete]
+  - apiGroups: [""]
+    resources: [pods, events]
+    verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: app-deployer
+  namespace: app-prod
+subjects:
+  - kind: ServiceAccount
+    name: app-deployer
+    namespace: app-prod
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: app-deployer
